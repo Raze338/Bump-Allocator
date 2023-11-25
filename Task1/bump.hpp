@@ -52,8 +52,6 @@ private:
         heap_used = 0;
         next = heap;
     }
-
-
     char *heap;
     char *next;
     size_t heap_size;
