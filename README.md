@@ -1,92 +1,421 @@
 # bump_allocator
 
+This Repo is associated with the "UFCFWR-15-3 Advanced Systems Programming" course Worksheet-2, Tasks 1-3.
+
+## Table of Contents
+
+- [About](#about)
+- [Getting Started](#getting-started)
+- [Tasks](#tasks)
+    - [Task 1](#task-1)
+        - [Review](#review)
+        - ['Bump' Class Breakdown](#bump-class-breakdown)
+        - [The alignment and padding](#the-alignment-and-padding)
+        - [Output](#output)
+
+    - [Task 2](#task-2)
+        - [Review](#review-1)
+        - ['Bump' Class Unit Tests Breakdown](#bump-class-unit-tests-breakdown)
+        - [Output](#output-1)
+        - [Output Breakdown](#output-breakdown)
 
 
-## Getting started
+    - [Task 3](#task-3)
+        - [Review](#review-2)
+        - ['Bump' Class Bump Downwards Breakdown](#bump-class-bump-downwards-breakdown)
+        - [Output](#output-2)
 
-To make it easy for you to get started with GitLab, here's a list of recommended next steps.
+## About
 
-Already a pro? Just edit this README.md and make it your own. Want to make it easy? [Use the template at the bottom](#editing-this-readme)!
+This worksheet focuses on memory allocation and the implementation of a bump allocator.
 
-## Add your files
+## Getting Started
 
-- [ ] [Create](https://docs.gitlab.com/ee/user/project/repository/web_editor.html#create-a-file) or [upload](https://docs.gitlab.com/ee/user/project/repository/web_editor.html#upload-a-file) files
-- [ ] [Add files using the command line](https://docs.gitlab.com/ee/gitlab-basics/add-file.html#add-a-file-using-the-command-line) or push an existing Git repository with the following command:
+To run any of the Tasks in this worksheet, use the following commands:
 
-```
-cd existing_repo
-git remote add origin https://gitlab.uwe.ac.uk/mr2-alkhateeb/bump_allocator.git
-git branch -M main
-git push -uf origin main
-```
+~~~ruby
+cd bump_allocator
+cd Task<task number>
+clang++ main.cpp -o main; ./main
+~~~
 
-## Integrate with your tools
+For Task 2, it is essential to complie the simpletest.cpp file as well while running the code.
 
-- [ ] [Set up project integrations](https://gitlab.uwe.ac.uk/mr2-alkhateeb/bump_allocator/-/settings/integrations)
+~~~ruby
+clang++ main.cpp simpletest/simpletest.cpp -o main; ./main
+~~~
 
-## Collaborate with your team
+## Memory Allocation
 
-- [ ] [Invite team members and collaborators](https://docs.gitlab.com/ee/user/project/members/)
-- [ ] [Create a new merge request](https://docs.gitlab.com/ee/user/project/merge_requests/creating_merge_requests.html)
-- [ ] [Automatically close issues from merge requests](https://docs.gitlab.com/ee/user/project/issues/managing_issues.html#closing-issues-automatically)
-- [ ] [Enable merge request approvals](https://docs.gitlab.com/ee/user/project/merge_requests/approvals/)
-- [ ] [Set auto-merge](https://docs.gitlab.com/ee/user/project/merge_requests/merge_when_pipeline_succeeds.html)
+Memory allocation is a crucial aspect of programming where programs request and release memory during their execution. In this worksheet, we explore the concept of memory allocation by delving into the implementation of a custom heap allocator, specifically focusing on a type known as a bump allocator.
 
-## Test and Deploy
+## Tasks
 
-Use the built-in continuous integration in GitLab.
+### Task 1
 
-- [ ] [Get started with GitLab CI/CD](https://docs.gitlab.com/ee/ci/quick_start/index.html)
-- [ ] [Analyze your code for known vulnerabilities with Static Application Security Testing(SAST)](https://docs.gitlab.com/ee/user/application_security/sast/)
-- [ ] [Deploy to Kubernetes, Amazon EC2, or Amazon ECS using Auto Deploy](https://docs.gitlab.com/ee/topics/autodevops/requirements.html)
-- [ ] [Use pull-based deployments for improved Kubernetes management](https://docs.gitlab.com/ee/user/clusters/agent/)
-- [ ] [Set up protected environments](https://docs.gitlab.com/ee/ci/environments/protected_environments.html)
+#### Review
 
-***
+-Task 1 explores the implementation of a 'Bump Allocator'. It is a template class that takes in the specified size for the allocator, and handles the allocation of bytes depending on the datatype, and the deallocation of the entire heap once called.
 
-# Editing this README
+#### 'Bump' Class Breakdown
 
-When you're ready to make this README your own, just edit this file and use the handy template below (or feel free to structure it however you want - this is just a starting point!). Thank you to [makeareadme.com](https://www.makeareadme.com/) for this template.
+Constructor:
 
-## Suggestions for a good README
-Every project is different, so consider which of these sections apply to yours. The sections used in the template are suggestions for most open source projects. Also keep in mind that while a README can be too long and detailed, too long is better than too short. If you think your README is too long, consider utilizing another form of documentation rather than cutting out information.
+~~~ruby
+Bump() {
+        heap_size = size;
+        init();
+    }
+~~~
+The constructor consists of the 'heap_size', which underlines the size of the heap itself when specified in main, and the 'init()' function to initialise the heap.
 
-## Name
-Choose a self-explaining name for your project.
+~~~ruby
+void init() {
+        heap = new char[heap_size];
+        heap_used = 0;
+        next = heap;
+    }
+~~~
 
-## Description
-Let people know what your project can do specifically. Provide context and add a link to any reference visitors might be unfamiliar with. A list of Features or a Background subsection can also be added here. If there are alternatives to your project, this is a good place to list differentiating factors.
+The 'init()' consists of the 'heap' itself (allocated with memory dynamically using the 'new' function, and being a char[heap_size] to be exactly one byte to work with memory in the byte level, and to ensure accuracy with respect to allocaions and for the alignment), the 'heap_used' which is set to '0' to be a starting point for the amount of memory allocated in our bump allocator, and a 'next' pointer that points to the heap, to be able to keep track of the next available memory address after allocation (further explained in the alloc function).
 
-## Badges
-On some READMEs, you may see small images that convey metadata, such as whether or not all the tests are passing for the project. You can use Shields to add some to your README. Many services also have instructions for adding a badge.
+---
 
-## Visuals
-Depending on what you are making, it can be a good idea to include screenshots or even a video (you'll frequently see GIFs rather than actual videos). Tools like ttygif can help, but check out Asciinema for a more sophisticated method.
+Destructor:
+~~~ruby
+ ~Bump() {
+        delete[] heap;
+    }
+~~~
 
-## Installation
-Within a particular ecosystem, there may be a common way of installing things, such as using Yarn, NuGet, or Homebrew. However, consider the possibility that whoever is reading your README is a novice and would like more guidance. Listing specific steps helps remove ambiguity and gets people to using your project as quickly as possible. If it only runs in a specific context like a particular programming language version or operating system or has dependencies that have to be installed manually, also add a Requirements subsection.
+The destructor is used to delete the entire heap after the bump object goes out of scope, and is done to safely free up memory, eventhough the bump has a deallocation function.
 
-## Usage
-Use examples liberally, and show the expected output if you can. It's helpful to have inline the smallest example of usage that you can demonstrate, while providing links to more sophisticated examples if they are too long to reasonably include in the README.
+---
 
-## Support
-Tell people where they can go to for help. It can be any combination of an issue tracker, a chat room, an email address, etc.
+alloc function:
 
-## Roadmap
-If you have ideas for releases in the future, it is a good idea to list them in the README.
+~~~ruby
+template <class T>
+    T* alloc(size_t n) {
+        size_t address = reinterpret_cast<size_t>(next); // Current memory address
+        size_t current_alignment = alignof(T);  // Alignment of type 'T'
+        size_t padding = (current_alignment - (address % current_alignment)) % current_alignment; // Padding needed to satisfy alignment
 
-## Contributing
-State if you are open to contributions and what your requirements are for accepting them.
+        // Check if there is enough space for allocation, return nullptr if failed
+        if (heap + heap_size - next < (sizeof(T) * n) + padding) {
+            return nullptr;
+        }
+        
+        char* new_alignment = next + padding; // Adjust alignment of 'next'
+        T* ptr = reinterpret_cast<T*>(new_alignment); // Pointer to new alignment
+        next = new_alignment + (sizeof(T) * n); // Update 'next' to point to next available memory address
+        heap_used += sizeof(T) * n + padding; // Update memory used in heap
+        
+        std::cout << "Allocated " << n << " elements at address " << reinterpret_cast<void*>(ptr) << std::endl;
+        std::cout << "Heap used is: " << heap_used << std::endl;
+        std::cout << "The next available memory address is: " << reinterpret_cast<void*>(next) << std::endl;
+        return ptr;
+~~~
 
-For people who want to make changes to your project, it's helpful to have some documentation on how to get started. Perhaps there is a script that they should run or some environment variables that they need to set. Make these steps explicit. These instructions could also be useful to your future self.
+The alloc function is used to allocate memory in the heap for a specified number of elements of type 'T'. It implements the use of an alignment logic, where it ensures that when an instance is allocated in the heap, alignment requirements of the specific type 'T' is calculated to adjust the memory address 'next' to meet these requirements, and padding is applied between allocations to ensure that the next allocation starts at a properly aligned memory address.
 
-You can also document commands to lint the code or run tests. These steps help to ensure high code quality and reduce the likelihood that the changes inadvertently break something. Having instructions for running tests is especially helpful if it requires external setup, such as starting a Selenium server for testing in a browser.
+### The alignment and padding:
 
-## Authors and acknowledgment
-Show your appreciation to those who have contributed to the project.
+We firstly need to get the curret memory address (by converting the current value of the 'next' pointer to 'size_t'), then determine the alignement required for type 'T' (current_alignment) by using the 'alignof' function, which is the boundary on which objects of the current datatype should be aligned to in memory. 
 
-## License
-For open source projects, say how it is licensed.
+Once we acquire both the address and the alignment needed for the current object, we then need to calculate the padding needed to be set between allocations when necessary. 
 
-## Project status
-If you have run out of energy or time for your project, put a note at the top of the README saying that development has slowed down or stopped completely. Someone may choose to fork your project or volunteer to step in as a maintainer or owner, allowing your project to keep going. You can also make an explicit request for maintainers.
+~~~ruby
+size_t padding = (current_alignment - (address % current_alignment)) % current_alignment;
+~~~
+
+The 'address % current_alignment' operation gives the remainder of the 'address' being divided by the 'current_alignment' to see how much the current address would deviate from being aligned. Subtracting this result with the 'current_alignment' would then give us the additional memory needed to reach the next aligned memory. 
+
+
+
+---
+
+dealloc function:
+
+~~~ruby
+void dealloc() {
+        delete[] heap;
+        init();
+        std::cout << "Deallocated all memory." << std::endl;
+        std::cout << "Deallocated memory at address " << static_cast<void *>(heap) << std::endl;
+    }
+~~~
+
+The dealloc funciton is used to deallocate memory from the heap by deleting the entire heap when called. It then reinitialises the heap using the 'init()' function.
+
+---
+#### Output
+
+Main:
+~~~ruby
+int main() {
+    Bump<20> allocator; // Allocating 20 bytes to the bump object
+    
+    char* ch = allocator.alloc<char>(1); // Allocate 1 instance of a char
+    double* d = allocator.alloc<double>(1); // Allocate 1 instance of a double
+    char* ch1 = allocator.alloc<char>(1); // Allocate 1 instance of a char
+    int* i = allocator.alloc<int>(1); // Allocate 1 instance of a int
+    
+    // Check if i is a nullptr if it doesnt have enough space to be allocated
+    if (i == nullptr) {
+      printf("nullptr\n");
+    }
+
+    allocator.dealloc(); // Deallocate the heap of the object
+}
+~~~
+
+Terminal:
+~~~ruby
+Allocated 1 elements at address 0x2120eb0
+Heap used is: 1
+The next available memory address is: 0x2120eb1
+Allocated 1 elements at address 0x2120eb8
+Heap used is: 16
+The next available memory address is: 0x2120ec0
+Allocated 1 elements at address 0x2120ec0
+Heap used is: 17
+The next available memory address is: 0x2120ec1
+nullptr
+Deallocated all memory.
+Deallocated memory at address 0x2120eb0
+~~~
+---
+
+### Task 2
+
+#### Review
+
+-Task 2 involves the use of a subrepo on github that is used to create unit tests. They are implemented in this task to ensure the accuracy of the allocations and deallocations of the bump allocator using different datatypes and bump sizes.
+
+The code remains the same, with the exception for the dealloc function now being of type 'bool' rather than 'void', to be able to test it and produce results.
+
+#### 'Bump' Class Unit Tests Breakdown
+
+dealloc function bool type:
+~~~ruby
+    bool dealloc() {
+        delete[] heap;
+        init();
+        return true;
+    }
+~~~
+
+Unit tests in main:
+~~~ruby
+char const * groups[] = {
+"Bump",
+};
+
+DEFINE_TEST_G(AllocInt, Bump) {
+     Bump<20 * sizeof(int)> bumper;
+
+    int * x = bumper.alloc<int>(10);
+    TEST_MESSAGE(x != nullptr, "Failed to allocate!!!!");
+    int * y = bumper.alloc<int>(10);
+    TEST_MESSAGE(y != nullptr, "Failed to allocate!!!!");
+    int * z = bumper.alloc<int>(10);
+    TEST_MESSAGE(z == nullptr, "Should have failed to allocate!!!!");
+}
+
+DEFINE_TEST_G(Bump0, Bump) {
+    Bump<0 * sizeof(int)> bumper;
+
+    float * x = bumper.alloc<float>(10);
+    TEST_MESSAGE(x != nullptr, "Failed to allocate!!!!");
+    float * y = bumper.alloc<float>(10);
+    TEST_MESSAGE(y != nullptr, "Failed to allocate!!!!");
+    float * z = bumper.alloc<float>(10);
+    TEST_MESSAGE(z == nullptr, "Should have failed to allocate!!!!");
+}
+
+DEFINE_TEST_G(Alloc0, Bump) {
+    Bump<300 * sizeof(int)> bumper;
+
+    double * x = bumper.alloc<double>(0);
+    TEST_MESSAGE(x != nullptr, "Failed to allocate!!!!");
+    double * y = bumper.alloc<double>(0);
+    TEST_MESSAGE(y != nullptr, "Failed to allocate!!!!");
+    double * z = bumper.alloc<double>(0);
+    TEST_MESSAGE(z != nullptr, "Failed to allocate!!!!");
+}
+
+DEFINE_TEST_G(AllocExceed, Bump) {
+    Bump<20 * sizeof(int)> bumper;
+
+    char * x = bumper.alloc<char>(10);
+    TEST_MESSAGE(x != nullptr, "Failed to allocate!!!!");
+    char * y = bumper.alloc<char>(50);
+    TEST_MESSAGE(y != nullptr, "Failed to allocate!!!!");
+    char * z = bumper.alloc<char>(100);
+    TEST_MESSAGE(z != nullptr, "Failed to allocate!!!!");
+}
+
+DEFINE_TEST_G(AllocStruct, Bump) {
+    Bump<20 * sizeof(double)> bumper;
+
+    struct Point {
+    double x;  
+    double y;  
+    double z;  
+    };
+
+    Point myPoint;
+
+    myPoint.x = 1.0;
+    myPoint.y = 2.5;
+    myPoint.z = -3.7;
+
+    double* xPtr = bumper.alloc<double>(10);
+    TEST_MESSAGE(xPtr != nullptr, "Failed to allocate!!!!");
+    myPoint.x = *xPtr;
+
+    double* yPtr = bumper.alloc<double>(10);
+    TEST_MESSAGE(yPtr != nullptr, "Failed to allocate!!!!");
+    myPoint.y = *yPtr;
+
+    double* zPtr = bumper.alloc<double>(10);
+    TEST_MESSAGE(zPtr == nullptr, "Should have failed to allocate!!!!");
+}
+
+
+DEFINE_TEST_G(AllocUnion, Bump) {
+    union DataUnion {
+        int intValue;
+        float floatValue;
+    };
+
+    DataUnion data;
+
+    Bump<20 * sizeof(DataUnion)> bumper;
+
+    data.intValue = bumper.alloc<int>(1)[0];
+    TEST_MESSAGE(data.intValue == 0, "Failed to allocate int value");
+
+    data.floatValue = bumper.alloc<float>(1)[0];
+    TEST_MESSAGE(data.floatValue == 0.0f, "Failed to allocate float value");
+}
+
+DEFINE_TEST_G(Dealloc, Bump) {
+    Bump<30 * sizeof(int)> bumper;
+
+    int * x1 = bumper.alloc<int>(5);
+    int * y1 = bumper.alloc<int>(5);
+    int * z1 = bumper.alloc<int>(5);
+    
+    TEST_MESSAGE(bumper.dealloc(), "Failed deallocation");
+}
+
+int main() {
+
+    bool pass = true;
+    for (auto group : groups) {
+        pass &= TestFixture::ExecuteTestGroup(group, TestFixture::Verbose);
+    }
+    return pass ? 0 : 1;
+}
+~~~
+
+#### Output
+
+~~~ruby
+Running all tests in groups [Bump].
+Running [Bump/AllocInt]: Passed 3 out of 3 tests in 4e-06 seconds
+Running [Bump/Bump0]: Failed 2 out of 3 tests
+main.cpp(23): Condition [x != nullptr] Failed. Failed to allocate!!!!
+main.cpp(25): Condition [y != nullptr] Failed. Failed to allocate!!!!
+Running [Bump/Alloc0]: Passed 3 out of 3 tests in 1e-06 seconds
+Running [Bump/AllocExceed]: Failed 1 out of 3 tests
+main.cpp(49): Condition [z != nullptr] Failed. Should have failed to allocate!!!!
+Running [Bump/AllocStruct]: Passed 3 out of 3 tests in 1e-06 seconds
+Running [Bump/AllocUnion]: Passed 2 out of 2 tests in 0 seconds
+Running [Bump/Dealloc]: Passed 1 out of 1 tests in 1e-06 seconds
+7 Tests finished, 3 of 18 assertions failed. Some tests are reporting errors.
+~~~
+
+#### Output Breakdown
+
+If we take the first output for the first test function 'AllocInt', we get that all the results passed. 
+
+~~~ruby
+DEFINE_TEST_G(AllocInt, Bump) {
+     Bump<20 * sizeof(int)> bumper;
+
+    int * x = bumper.alloc<int>(10);
+    TEST_MESSAGE(x != nullptr, "Failed to allocate!!!!");
+    int * y = bumper.alloc<int>(10);
+    TEST_MESSAGE(y != nullptr, "Failed to allocate!!!!");
+    int * z = bumper.alloc<int>(10);
+    TEST_MESSAGE(z == nullptr, "Should have failed to allocate!!!!");
+}
+~~~
+
+The first 2 test messages check whether 'x' and 'y' are not null pointers, which is correct since the bump has enough space to allocate the 10 instances of each 'x' and 'y'.
+
+The third test message checks whether 'z' is a null pointer, which is correct since the bump at that point does not have enough space to allocate for the 10 instances of 'z'. 
+
+We know this since the size of the bump is 20 * 4(which is the size of bytes for int) giving us 80. The first 2 allocations total at 80 bytes (4 bytes for each instance, meaning 10 instances would be 40, and since both 'x' and 'y' allocate the same amount, it totals 80). This means that the bump used up 100% capacity for allocations (80/80). The allocation of 10 bytes for 'z' is not possible, making it a nullptr.
+
+~~~ruby
+Running [Bump/AllocInt]: Passed 3 out of 3 tests in 4e-06 seconds
+~~~
+
+---
+
+When it comes to the Second test function, we get that the test had failed 2 out of 3 tests. 
+
+~~~ruby
+DEFINE_TEST_G(Bump0, Bump) {
+    Bump<0 * sizeof(int)> bumper;
+
+    float * x = bumper.alloc<float>(10);
+    TEST_MESSAGE(x != nullptr, "Failed to allocate!!!!");
+    float * y = bumper.alloc<float>(10);
+    TEST_MESSAGE(y != nullptr, "Failed to allocate!!!!");
+    float * z = bumper.alloc<float>(10);
+    TEST_MESSAGE(z == nullptr, "Should have failed to allocate!!!!");
+}
+~~~
+
+This function is introduced to test the outcome when the bump size is 0. The first 2 test messages fail since the is no space for the bump to allocate to. The third test message passes due to the fact that in my implementation for the bump, if there is not enough space to allocate, it would return a 'nullptr'. This suffices the condition, making it pass.
+
+~~~ruby
+Running [Bump/Bump0]: Failed 2 out of 3 tests
+main.cpp(23): Condition [x != nullptr] Failed. Failed to allocate!!!!
+main.cpp(25): Condition [y != nullptr] Failed. Failed to allocate!!!!
+~~~
+
+---
+When it comes to the fourth test function, we get that the test had failed 1 out of 3 tests.
+
+~~~ruby
+DEFINE_TEST_G(AllocExceed, Bump) {
+    Bump<20 * sizeof(int)> bumper;
+
+    char * x = bumper.alloc<char>(10);
+    TEST_MESSAGE(x != nullptr, "Failed to allocate!!!!");
+    char * y = bumper.alloc<char>(50);
+    TEST_MESSAGE(y != nullptr, "Failed to allocate!!!!");
+    char * z = bumper.alloc<char>(100);
+    TEST_MESSAGE(z != nullptr, "Failed to allocate!!!!");
+}
+~~~
+
+This function is introduced to test the outcome when the allocations exceed the limit of the bump size. The first 2 test messages pass as expected due to them having the necessary space to allocate, while the last one fails due to it not having enough space to allocate (Each instance is 1 byte since a char is 1 byte, 10 + 50 = 60, bump size = 80, only 20 bytes left in bump after the first 2 allocations, 3rd allocation exceeeds that allowed limit as it wants to allocate 100 instances).
+
+---
+
+### Task 3
+
+#### Review
+
+-Task 3 explores the implementation of the "bump downwards" logic in the bump allocator.  
+
+#### 'Bump' Class Bump Downwards Breakdown
+
+#### Output
