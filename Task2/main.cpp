@@ -7,7 +7,7 @@ char const * groups[] = {
 
 // Allocaing int
 DEFINE_TEST_G(AllocInt, Bump) {
-     Bump<20 * sizeof(int)> bumper;
+     bump<20 * sizeof(int)> bumper;
 
     int * x = bumper.alloc<int>(10);
     TEST_MESSAGE(x != nullptr, "Failed to allocate!!!!");
@@ -19,7 +19,7 @@ DEFINE_TEST_G(AllocInt, Bump) {
 
 // Allocations with a bump size 0
 DEFINE_TEST_G(Bump0, Bump) {
-    Bump<0 * sizeof(int)> bumper;
+    bump<0 * sizeof(int)> bumper;
 
     float * x = bumper.alloc<float>(10);
     TEST_MESSAGE(x != nullptr, "Failed to allocate!!!!");
@@ -31,7 +31,7 @@ DEFINE_TEST_G(Bump0, Bump) {
 
 // Allocations with 0 instances
 DEFINE_TEST_G(Alloc0, Bump) {
-    Bump<300 * sizeof(int)> bumper;
+    bump<300 * sizeof(int)> bumper;
 
     double * x = bumper.alloc<double>(0);
     TEST_MESSAGE(x != nullptr, "Failed to allocate!!!!");
@@ -43,7 +43,7 @@ DEFINE_TEST_G(Alloc0, Bump) {
 
 // Allocations with one that exceeds the bump size
 DEFINE_TEST_G(AllocExceed, Bump) {
-    Bump<20 * sizeof(int)> bumper;
+    bump<20 * sizeof(int)> bumper;
 
     char * x = bumper.alloc<char>(10);
     TEST_MESSAGE(x != nullptr, "Failed to allocate!!!!");
@@ -55,7 +55,7 @@ DEFINE_TEST_G(AllocExceed, Bump) {
 
 // Allocation of a struct
 DEFINE_TEST_G(AllocStruct, Bump) {
-    Bump<20 * sizeof(double)> bumper;
+    bump<20 * sizeof(double)> bumper;
 
     struct Point {
     double x;  
@@ -90,7 +90,7 @@ DEFINE_TEST_G(AllocUnion, Bump) {
 
     DataUnion data;
 
-    Bump<20 * sizeof(DataUnion)> bumper;
+    bump<20 * sizeof(DataUnion)> bumper;
 
     data.intValue = bumper.alloc<int>(1)[0];
     TEST_MESSAGE(data.intValue == 0, "Failed to allocate int value");
@@ -101,7 +101,7 @@ DEFINE_TEST_G(AllocUnion, Bump) {
 
 // Deallocating the bump
 DEFINE_TEST_G(Dealloc, Bump) {
-    Bump<30 * sizeof(int)> bumper;
+    bump<30 * sizeof(int)> bumper;
 
     int * x1 = bumper.alloc<int>(5);
     int * y1 = bumper.alloc<int>(5);

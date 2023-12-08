@@ -5,105 +5,103 @@
 
 // Benchmark function
 template <typename Func, typename... Args>
-auto benchmark(Func func, Args&&... args) {
-    auto start_time = std::chrono::high_resolution_clock::now();
-    
-    // Call the function with provided arguments
-    func(std::forward<Args>(args)...);
+auto benchmark(Func func, Args&... args) {
+    auto start_time = std::chrono::high_resolution_clock::now(); // Record start time
 
-    auto end_time = std::chrono::high_resolution_clock::now();
-    return std::chrono::duration_cast<std::chrono::nanoseconds>(end_time - start_time).count();
+    func(args...); // Call the function with provided arguments
+
+    auto end_time = std::chrono::high_resolution_clock::now(); // Record end time
+
+    return std::chrono::duration_cast<std::chrono::nanoseconds>(end_time - start_time).count(); // Calculate time elapsed in nanoseconds
 }
 
-// Bump down benchmark
-// // Example functions to benchmark
-void downSmallAllocationsBenchmark() {
-    Bump_down<1000000> bumpAllocator;  // Adjust the heap size accordingly
-    for (int i = 0; i < 1000; ++i) {
-        int* ptr = bumpAllocator.alloc<int>(1);
-        // Do something with ptr
+// Bump up benchmarks
+void upSmallAllocationsBenchmark(bump_up<1000000>& bumpAllocator) {
+    // Make 1000 small allocations of type int
+    for (int i = 0; i < 1000; i++) {
+        bumpAllocator.alloc<int>(1);
     }
     bumpAllocator.dealloc();
 }
 
-void downBigAllocationsBenchmark() {
-    Bump_down<1000000> bumpAllocator;  // Adjust the heap size accordingly
-    for (int i = 0; i < 10; ++i) {
-        int* ptr = bumpAllocator.alloc<int>(100000);
-        // Do something with ptr
+void upBigAllocationsBenchmark(bump_up<1000000>& bumpAllocator) {
+    // Make 10 big allocations of type char with a size of 25000
+    for (int i = 0; i < 10; i++) {
+        bumpAllocator.alloc<char>(25000);
     }
     bumpAllocator.dealloc();
 }
 
-void downMixedAllocationsBenchmark() {
-    Bump_down<1000000> bumpAllocator;  // Adjust the heap size accordingly
-    for (int i = 0; i < 500; ++i) {
-        int* ptr1 = bumpAllocator.alloc<int>(1);
-        int* ptr2 = bumpAllocator.alloc<int>(10000);
-        // Do something with ptr1 and ptr2
+void upMixedAllocationsBenchmark(bump_up<1000000>& bumpAllocator) {
+    // Make 500 mixed allocations of type int (1) and int (10000)
+    for (int i = 0; i < 500; i++) {
+        bumpAllocator.alloc<int>(1);
+        bumpAllocator.alloc<int>(10000);
     }
     bumpAllocator.dealloc();
 }
 
-// Bump up 
-// Example functions to benchmark
-void upSmallAllocationsBenchmark() {
-    Bump_up<1000000> bumpAllocator;  // Adjust the heap size accordingly
-    for (int i = 0; i < 1000; ++i) {
-        int* ptr = bumpAllocator.alloc<int>(1);
-        // Do something with ptr
+// Bump down benchmarks
+void downSmallAllocationsBenchmark(bump_down<1000000>& bumpAllocator) {
+    // Make 1000 small allocations of type int
+    for (int i = 0; i < 1000; i++) {
+        bumpAllocator.alloc<int>(1);
     }
     bumpAllocator.dealloc();
 }
 
-void upBigAllocationsBenchmark() {
-    Bump_up<1000000> bumpAllocator;  // Adjust the heap size accordingly
-    for (int i = 0; i < 10; ++i) {
-        int* ptr = bumpAllocator.alloc<int>(100000);
-        // Do something with ptr
+void downBigAllocationsBenchmark(bump_down<1000000>& bumpAllocator) {
+    // Make 10 big allocations of type char with a size of 25000
+    for (int i = 0; i < 10; i++) {
+        bumpAllocator.alloc<char>(25000);
     }
     bumpAllocator.dealloc();
 }
 
-void upMixedAllocationsBenchmark() {
-    Bump_up<1000000> bumpAllocator;  // Adjust the heap size accordingly
-    for (int i = 0; i < 500; ++i) {
-        int* ptr1 = bumpAllocator.alloc<int>(1);
-        int* ptr2 = bumpAllocator.alloc<int>(10000);
-        // Do something with ptr1 and ptr2
+void downMixedAllocationsBenchmark(bump_down<1000000>& bumpAllocator) {
+    // Make 500 mixed allocations of type int (1) and int (10000)
+    for (int i = 0; i < 500; i++) {
+        bumpAllocator.alloc<int>(1);
+        bumpAllocator.alloc<int>(10000);
     }
     bumpAllocator.dealloc();
 }
 
 int main() {
-    // Bump_down Benchmarks
-    // Benchmark small allocations
-    auto downTimeSmallAllocations = benchmark(downSmallAllocationsBenchmark);
-    std::cout << "Time taken for small allocations: " << downTimeSmallAllocations << " milliseconds." << std::endl;
 
-    // Benchmark big allocations
-    auto downTimeBigAllocations = benchmark(downBigAllocationsBenchmark);
-    std::cout << "Time taken for big allocations: " << downTimeBigAllocations << " milliseconds." << std::endl;
+    // Bump up Benchmarks
+    // Benchmark small allocations
+    bump_up<1000000> bumpAllocatorUpSmall;
+    auto upTimeSmallAllocations = benchmark(upSmallAllocationsBenchmark, bumpAllocatorUpSmall);
+    std::cout << "Time taken for small allocations: " << upTimeSmallAllocations << " nanoseconds." << std::endl;
+
+    // // Benchmark big allocations
+    bump_up<1000000> bumpAllocatorUpBig;
+    auto upTimeBigAllocations = benchmark(upBigAllocationsBenchmark, bumpAllocatorUpBig);
+    std::cout << "Time taken for big allocations up: " << upTimeBigAllocations << " nanoseconds." << std::endl;
 
     // Benchmark mixed allocations
-    auto downTimeMixedAllocations = benchmark(downMixedAllocationsBenchmark);
-    std::cout << "Time taken for mixed allocations: " << downTimeMixedAllocations << " milliseconds." << std::endl;
-    std::cout << "Bump down benchmark complete" << std::endl;
-
-
-    // Bump_up Benchmarks
-    // Benchmark small allocations
-    auto upTimeSmallAllocations = benchmark(upSmallAllocationsBenchmark);
-    std::cout << "Time taken for small allocations: " << upTimeSmallAllocations << " milliseconds." << std::endl;
-
-    // Benchmark big allocations
-    auto upTimeBigAllocations = benchmark(upBigAllocationsBenchmark);
-    std::cout << "Time taken for big allocations: " << upTimeBigAllocations << " milliseconds." << std::endl;
-
-    // Benchmark mixed allocations
-    auto upTimeMixedAllocations = benchmark(upMixedAllocationsBenchmark);
-    std::cout << "Time taken for mixed allocations: " << upTimeMixedAllocations << " milliseconds." << std::endl;
+    bump_up<1000000> bumpAllocatorUpMixed;
+    auto upTimeMixedAllocations = benchmark(upMixedAllocationsBenchmark, bumpAllocatorUpMixed);
+    std::cout << "Time taken for mixed allocations: " << upTimeMixedAllocations << " nanoseconds." << std::endl;
     std::cout << "Bump up benchmark complete" << std::endl;
+
+    // Bump down Benchmarks
+    // Benchmark small allocations
+    bump_down<1000000> bumpAllocatorDownSmall;
+    auto downTimeSmallAllocations = benchmark(downSmallAllocationsBenchmark, bumpAllocatorDownSmall);
+    std::cout << "Time taken for small allocations: " << downTimeSmallAllocations << " nanoseconds." << std::endl;
+
+    // // Benchmark big allocations
+    bump_down<1000000> bumpAllocatorDownBig;
+    auto downTimeBigAllocations = benchmark(downBigAllocationsBenchmark, bumpAllocatorDownBig);
+    std::cout << "Time taken for big allocations down: " << downTimeBigAllocations << " nanoseconds." << std::endl;
+
+    // Benchmark mixed allocations
+    bump_down<1000000> bumpAllocatorDownMixed;
+    auto downTimeMixedAllocations = benchmark(downMixedAllocationsBenchmark, bumpAllocatorDownMixed);
+    std::cout << "Time taken for mixed allocations: " << downTimeMixedAllocations << " nanoseconds." << std::endl;
+    std::cout << "Bump down benchmark complete" << std::endl;
 
 
     return 0;

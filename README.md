@@ -23,6 +23,8 @@ This Repo is associated with the "UFCFWR-15-3 Advanced Systems Programming" cour
     - [Task 3](#task-3)
         - [Review](#review-2)
         - ['Bump' Class Bump Downwards Breakdown](#bump-class-bump-downwards-breakdown)
+        - [The alignment and padding (bump down)](#the-alignment-and-padding-bump-down)
+        - [Benchmark function](#benchmark-function)
         - [Output](#output-2)
 
 ## About
@@ -31,18 +33,36 @@ This worksheet focuses on memory allocation and the implementation of a bump all
 
 ## Getting Started
 
-To run any of the Tasks in this worksheet, use the following commands:
+To run the Tasks in this worksheet, use the following commands:
+
+Acessing tasks:
 
 ~~~ruby
-cd bump_allocator
-cd Task<task number>
-clang++ main.cpp -o main; ./main
+$ cd Task<task number>
 ~~~
 
-For Task 2, it is essential to complie the simpletest.cpp file as well while running the code.
+
+Task 1:
+~~~ruby
+$ clang++ main.cpp -o main; ./main
+~~~
+
+For Task 2, it is essential to complie the simpletest.cpp file as well while running the code:
 
 ~~~ruby
-clang++ main.cpp simpletest/simpletest.cpp -o main; ./main
+$ clang++ main.cpp simpletest/simpletest.cpp -o main; ./main
+~~~
+
+For Task 3, a comparison in performance can be made when compiling with or without '-O3' (aggressive optimisation):
+
+without:
+~~~ruby
+$ clang++ main.cpp -o main; ./main
+~~~
+
+with:
+~~~ruby
+$ clang++ -O3 main.cpp -o main; ./main
 ~~~
 
 ## Memory Allocation
@@ -62,28 +82,20 @@ Memory allocation is a crucial aspect of programming where programs request and 
 Constructor:
 
 ~~~ruby
-Bump() {
+bump() {
         heap_size = size;
-        init();
-    }
-~~~
-The constructor consists of the 'heap_size', which underlines the size of the heap itself when specified in main, and the 'init()' function to initialise the heap.
-
-~~~ruby
-void init() {
         heap = new char[heap_size];
         heap_used = 0;
         next = heap;
     }
 ~~~
-
-The 'init()' consists of the 'heap' itself (allocated with memory dynamically using the 'new' function, and being a char[heap_size] to be exactly one byte to work with memory in the byte level, and to ensure accuracy with respect to allocaions and for the alignment), the 'heap_used' which is set to '0' to be a starting point for the amount of memory allocated in our bump allocator, and a 'next' pointer that points to the heap, to be able to keep track of the next available memory address after allocation (further explained in the alloc function).
+The constructor consists of the 'heap_size', which underlines the size of the heap itself when specified in main, and the 'heap' itself (allocated with memory dynamically using the 'new' function, and being a char[heap_size] to be exactly one byte to work with memory in the byte level, and to ensure accuracy with respect to allocaions and for the alignment), the 'heap_used' which is set to '0' to be a starting point for the amount of memory allocated in our bump allocator, and a 'next' pointer that points to the heap, to be able to keep track of the next available memory address after allocation (further explained in the alloc function).
 
 ---
 
 Destructor:
 ~~~ruby
- ~Bump() {
+ ~bump() {
         delete[] heap;
     }
 ~~~
@@ -106,9 +118,10 @@ template <class T>
             return nullptr;
         }
         
-        char* new_alignment = next + padding; // Adjust alignment of 'next'
-        T* ptr = reinterpret_cast<T*>(new_alignment); // Pointer to new alignment
-        next = new_alignment + (sizeof(T) * n); // Update 'next' to point to next available memory address
+        
+        next += padding; // Adjust alignment of 'next'
+        T* ptr = reinterpret_cast<T*>(next); // Create a typed pointer at the adjusted 'next' location
+        next += sizeof(T) * n; // Move 'next' pointer to next available memory after allocation
         heap_used += sizeof(T) * n + padding; // Update memory used in heap
         
         std::cout << "Allocated " << n << " elements at address " << reinterpret_cast<void*>(ptr) << std::endl;
@@ -121,7 +134,7 @@ The alloc function is used to allocate memory in the heap for a specified number
 
 ### The alignment and padding:
 
-We firstly need to get the curret memory address (by converting the current value of the 'next' pointer to 'size_t'), then determine the alignement required for type 'T' (current_alignment) by using the 'alignof' function, which is the boundary on which objects of the current datatype should be aligned to in memory. 
+We firstly need to get the current memory address (by converting the current value of the 'next' pointer to 'size_t'), then determine the alignement required for type 'T' (current_alignment) by using the 'alignof' function, which is the boundary on which objects of the current datatype should be aligned to in memory. 
 
 Once we acquire both the address and the alignment needed for the current object, we then need to calculate the padding needed to be set between allocations when necessary. 
 
@@ -131,6 +144,7 @@ size_t padding = (current_alignment - (address % current_alignment)) % current_a
 
 The 'address % current_alignment' operation gives the remainder of the 'address' being divided by the 'current_alignment' to see how much the current address would deviate from being aligned. Subtracting this result with the 'current_alignment' would then give us the additional memory needed to reach the next aligned memory. 
 
+This is then used with '% current_alignemnt' to calculate the final padding value, ensuring that the calculated padding is with the range of 0 to 'current_alignment' - 1. If the address is already aligned, the result will be 0 (meaning no padding needed).
 
 
 ---
@@ -139,14 +153,13 @@ dealloc function:
 
 ~~~ruby
 void dealloc() {
-        delete[] heap;
-        init();
+        next = heap; // Have the 'next' pointer point back to the beginning of the heap
         std::cout << "Deallocated all memory." << std::endl;
         std::cout << "Deallocated memory at address " << static_cast<void *>(heap) << std::endl;
     }
 ~~~
 
-The dealloc funciton is used to deallocate memory from the heap by deleting the entire heap when called. It then reinitialises the heap using the 'init()' function.
+The dealloc funciton is used set the 'next' pointer back to the beginning of the heap. The reason for not having it delete the entire heap is that the memory that is already used for it in the heap will always remain no matter what you do, unless you destroy the object. The destructor does this to free up the resources used for the object after it has been destroyed. This means that when we move the 'next' pointer back to the beginning, we overwrite the existing memory in the heap instead of having a new one. 
 
 ---
 #### Output
@@ -154,7 +167,7 @@ The dealloc funciton is used to deallocate memory from the heap by deleting the 
 Main:
 ~~~ruby
 int main() {
-    Bump<20> allocator; // Allocating 20 bytes to the bump object
+    bump<20> allocator; // Allocating 20 bytes to the bump object
     
     char* ch = allocator.alloc<char>(1); // Allocate 1 instance of a char
     double* d = allocator.alloc<double>(1); // Allocate 1 instance of a double
@@ -200,8 +213,7 @@ The code remains the same, with the exception for the dealloc function now being
 dealloc function bool type:
 ~~~ruby
     bool dealloc() {
-        delete[] heap;
-        init();
+        next = heap; // Have the 'next' pointer point back to the beginning of the heap
         return true;
     }
 ~~~
@@ -213,7 +225,7 @@ char const * groups[] = {
 };
 
 DEFINE_TEST_G(AllocInt, Bump) {
-     Bump<20 * sizeof(int)> bumper;
+     bump<20 * sizeof(int)> bumper;
 
     int * x = bumper.alloc<int>(10);
     TEST_MESSAGE(x != nullptr, "Failed to allocate!!!!");
@@ -224,7 +236,7 @@ DEFINE_TEST_G(AllocInt, Bump) {
 }
 
 DEFINE_TEST_G(Bump0, Bump) {
-    Bump<0 * sizeof(int)> bumper;
+    bump<0 * sizeof(int)> bumper;
 
     float * x = bumper.alloc<float>(10);
     TEST_MESSAGE(x != nullptr, "Failed to allocate!!!!");
@@ -235,7 +247,7 @@ DEFINE_TEST_G(Bump0, Bump) {
 }
 
 DEFINE_TEST_G(Alloc0, Bump) {
-    Bump<300 * sizeof(int)> bumper;
+    bump<300 * sizeof(int)> bumper;
 
     double * x = bumper.alloc<double>(0);
     TEST_MESSAGE(x != nullptr, "Failed to allocate!!!!");
@@ -246,7 +258,7 @@ DEFINE_TEST_G(Alloc0, Bump) {
 }
 
 DEFINE_TEST_G(AllocExceed, Bump) {
-    Bump<20 * sizeof(int)> bumper;
+    bump<20 * sizeof(int)> bumper;
 
     char * x = bumper.alloc<char>(10);
     TEST_MESSAGE(x != nullptr, "Failed to allocate!!!!");
@@ -257,7 +269,7 @@ DEFINE_TEST_G(AllocExceed, Bump) {
 }
 
 DEFINE_TEST_G(AllocStruct, Bump) {
-    Bump<20 * sizeof(double)> bumper;
+    bump<20 * sizeof(double)> bumper;
 
     struct Point {
     double x;  
@@ -292,7 +304,7 @@ DEFINE_TEST_G(AllocUnion, Bump) {
 
     DataUnion data;
 
-    Bump<20 * sizeof(DataUnion)> bumper;
+    bump<20 * sizeof(DataUnion)> bumper;
 
     data.intValue = bumper.alloc<int>(1)[0];
     TEST_MESSAGE(data.intValue == 0, "Failed to allocate int value");
@@ -302,7 +314,7 @@ DEFINE_TEST_G(AllocUnion, Bump) {
 }
 
 DEFINE_TEST_G(Dealloc, Bump) {
-    Bump<30 * sizeof(int)> bumper;
+    bump<30 * sizeof(int)> bumper;
 
     int * x1 = bumper.alloc<int>(5);
     int * y1 = bumper.alloc<int>(5);
@@ -344,7 +356,7 @@ If we take the first output for the first test function 'AllocInt', we get that 
 
 ~~~ruby
 DEFINE_TEST_G(AllocInt, Bump) {
-     Bump<20 * sizeof(int)> bumper;
+     bump<20 * sizeof(int)> bumper;
 
     int * x = bumper.alloc<int>(10);
     TEST_MESSAGE(x != nullptr, "Failed to allocate!!!!");
@@ -371,7 +383,7 @@ When it comes to the Second test function, we get that the test had failed 2 out
 
 ~~~ruby
 DEFINE_TEST_G(Bump0, Bump) {
-    Bump<0 * sizeof(int)> bumper;
+    bump<0 * sizeof(int)> bumper;
 
     float * x = bumper.alloc<float>(10);
     TEST_MESSAGE(x != nullptr, "Failed to allocate!!!!");
@@ -395,7 +407,7 @@ When it comes to the fourth test function, we get that the test had failed 1 out
 
 ~~~ruby
 DEFINE_TEST_G(AllocExceed, Bump) {
-    Bump<20 * sizeof(int)> bumper;
+    bump<20 * sizeof(int)> bumper;
 
     char * x = bumper.alloc<char>(10);
     TEST_MESSAGE(x != nullptr, "Failed to allocate!!!!");
@@ -408,14 +420,194 @@ DEFINE_TEST_G(AllocExceed, Bump) {
 
 This function is introduced to test the outcome when the allocations exceed the limit of the bump size. The first 2 test messages pass as expected due to them having the necessary space to allocate, while the last one fails due to it not having enough space to allocate (Each instance is 1 byte since a char is 1 byte, 10 + 50 = 60, bump size = 80, only 20 bytes left in bump after the first 2 allocations, 3rd allocation exceeeds that allowed limit as it wants to allocate 100 instances).
 
+~~~ruby
+Running [Bump/Alloc0]: Passed 3 out of 3 tests in 1e-06 seconds
+Running [Bump/AllocExceed]: Failed 1 out of 3 tests
+main.cpp(49): Condition [z != nullptr] Failed. Should have failed to allocate!!!!
+~~~
+
 ---
 
 ### Task 3
 
 #### Review
 
--Task 3 explores the implementation of the "bump downwards" logic in the bump allocator.  
+-Task 3 explores the implementation of a "bump down" allocator, and a benchmark function that tests the time efficiency of both bump up and bump down allocators. 
+
+The bump down code is derived from the bump up code (which is the code from task 1 and 2) and modified so that it incorporates the bump down logic, in the alloc and dealloc functions.
+
+---
 
 #### 'Bump' Class Bump Downwards Breakdown
 
+Bump down alloc function:
+
+~~~ruby
+// alloc function
+    // Allocate memory for 'n' elements of type 'T'
+    template <class T>
+    T* alloc(size_t n) {
+        size_t address = reinterpret_cast<size_t>(next); // Current memory address
+        size_t current_alignment = alignof(T); // Alignment of type 'T'
+        size_t padding = (address & -current_alignment); // Calculate padding using bump down logic
+
+        // Check if there is enough space for allocation, return nullptr if failed
+        if (next - (sizeof(T) * n) - padding < heap) {
+            return nullptr;
+        }
+
+        char* new_alignment = reinterpret_cast<char*>(padding) - (sizeof(T) * n); // Calculate the new aligned memory location for the allocation
+        T* ptr = reinterpret_cast<T *>(new_alignment); // Create a typed pointer at the calculated aligned memory location
+        next = new_alignment; // Update 'next' pointer to the new aligned memory location
+        heap_used += (address - reinterpret_cast<uintptr_t>(padding)) + sizeof(T) * n; // Update memory used in heap
+
+        return ptr;
+    }
+~~~
+
+The alloc function allocates space for a specified number (n) of elements of type 'T'. It calculates the current memory address, determines the alignment requirement for type T, and calculates the necessary padding to achieve alignment using bump-down logic. 
+
+### The alignment and padding (bump down):
+
+The main difference between the alignment and padding of the bump down allocator from the bump up allocator is the calculation for the padding.
+
+In the padding calculation, 'address & -current_alignment' uses the bitwise AND operator (&) with the two's complement of 'current_alignment' to calculate the padding required for alignment. The '& -current_alignment' operation basically rounds down the current address to the nearest multiple of the alignment.
+
+The new alignment for the memory location for the allocation is then calculated by adjusting the address, moving it backwards by the size of the allocation 'sizeof(T) * n', ensuring that it is aligned correctly.
+
+---
+
+Bump down dealloc function:
+~~~ruby
+// dealloc function
+    // Deallocate by resetting the 'next' pointer to the end of the heap
+    void dealloc() {
+        next = heap + heap_size; // Have the 'next' pointer point back to the end of the heap
+    }
+
+~~~
+
+The dealloc funciton is used set the 'next' pointer back to the end of the heap. The reason for not having it delete the entire heap is that the memory that is already used for it in the heap will always remain no matter what you do, unless you destroy the object. The destructor does this to free up the resources used for the object after it has been destroyed. This means that when we move the 'next' pointer back to the end, we overwrite the existing memory in the heap instead of having a new one. 
+
+#### Benchmark function:
+
+~~~ruby
+template <typename Func, typename... Args>
+auto benchmark(Func func, Args&... args) {
+    auto start_time = std::chrono::high_resolution_clock::now(); // Record start time
+
+    func(args...); // Call the function with provided arguments
+
+    auto end_time = std::chrono::high_resolution_clock::now(); // Record end time
+
+    return std::chrono::duration_cast<std::chrono::nanoseconds>(end_time - start_time).count(); // Calculate time elapsed in nanoseconds
+}
+~~~
+
+The benchmark function is a template class that takes 2 parameters,  (Func:type of function) and (Args:types of arguments). It takes in a function (func) and a variable number of arguments (args). The function records the start time and the end time using the 'chrono' library to obtain a high resolution time point. 
+
+'func(args...)' is then called with the provided arguments, recording the beginning and the end of the execution time, calculating the time elapsed by subracting the start time from the end time. The duration is then returned in nanoseconds to achieve accuracy.
+
+3 funtions then are created, having 3 different tests that showcase each bump's efficiency. A small allocation, a big allocation, and a mixed allocation.
+
+Passing the fucntion arguments by reference has proven more efficent than passing by value. This is due to the fact that passing by reference does not create a copy, rather it allows the function to work directly with the original data in the sme memory location. This reduces memory overhead, especially when working with large objects.
+
+---
+
+#### Benchmark tests:
+
+~~~ruby
+// Bump up benchmarks
+void upSmallAllocationsBenchmark(bump_up<1000000>& bumpAllocator) {
+    // Make 1000 small allocations of type int
+    for (int i = 0; i < 1000; i++) {
+        bumpAllocator.alloc<int>(1);
+    }
+    bumpAllocator.dealloc();
+}
+
+void upBigAllocationsBenchmark(bump_up<1000000>& bumpAllocator) {
+    // Make 10 big allocations of type char with a size of 25000
+    for (int i = 0; i < 10; i++) {
+        bumpAllocator.alloc<char>(25000);
+    }
+    bumpAllocator.dealloc();
+}
+
+void upMixedAllocationsBenchmark(bump_up<1000000>& bumpAllocator) {
+    // Make 500 mixed allocations of type int (1) and int (10000)
+    for (int i = 0; i < 500; i++) {
+        bumpAllocator.alloc<int>(1);
+        bumpAllocator.alloc<int>(10000);
+    }
+    bumpAllocator.dealloc();
+}
+
+// Bump down benchmarks
+void downSmallAllocationsBenchmark(bump_down<1000000>& bumpAllocator) {
+    // Make 1000 small allocations of type int
+    for (int i = 0; i < 1000; i++) {
+        bumpAllocator.alloc<int>(1);
+    }
+    bumpAllocator.dealloc();
+}
+
+void downBigAllocationsBenchmark(bump_down<1000000>& bumpAllocator) {
+    // Make 10 big allocations of type char with a size of 25000
+    for (int i = 0; i < 10; i++) {
+        bumpAllocator.alloc<char>(25000);
+    }
+    bumpAllocator.dealloc();
+}
+
+void downMixedAllocationsBenchmark(bump_down<1000000>& bumpAllocator) {
+    // Make 500 mixed allocations of type int (1) and int (10000)
+    for (int i = 0; i < 500; i++) {
+        bumpAllocator.alloc<int>(1);
+        bumpAllocator.alloc<int>(10000);
+    }
+    bumpAllocator.dealloc();
+}
+~~~
+
+---
+
 #### Output
+
+It is worth noting that each run may give a different result. 
+
+Output without passing by reference (testing for big allocations only):
+~~~ruby
+Time taken for big allocations up: 15600 nanoseconds.
+Time taken for big allocations down: 6400 nanoseconds.
+~~~
+
+---
+
+Output with passing by reference:
+~~~ruby
+Time taken for small allocations: 24300 nanoseconds.
+Time taken for big allocations up: 300 nanoseconds.
+Time taken for mixed allocations: 17500 nanoseconds.
+Bump up benchmark complete
+Time taken for small allocations: 7100 nanoseconds.
+Time taken for big allocations down: 200 nanoseconds.
+Time taken for mixed allocations: 7100 nanoseconds.
+Bump down benchmark complete
+~~~
+
+---
+
+Optimised output when passed by reference (lowest recorded):
+~~~ruby
+Time taken for small allocations: 100 nanoseconds.
+Time taken for big allocations up: 0 nanoseconds.
+Time taken for mixed allocations: 0 nanoseconds.
+Bump up benchmark complete
+Time taken for small allocations: 0 nanoseconds.
+Time taken for big allocations down: 0 nanoseconds.
+Time taken for mixed allocations: 0 nanoseconds.
+Bump down benchmark complete
+~~~
+
+---

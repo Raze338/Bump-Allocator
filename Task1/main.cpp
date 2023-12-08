@@ -1,7 +1,7 @@
 #include "bump.hpp"
 
 int main() {
-    Bump<20> allocator; // Allocating 20 bytes to the bump object
+    bump<20> allocator; // Allocating 20 bytes to the bump object
     
     char* ch = allocator.alloc<char>(1); // Allocate 1 instance of a char
     double* d = allocator.alloc<double>(1); // Allocate 1 instance of a double
