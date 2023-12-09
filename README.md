@@ -87,9 +87,10 @@ bump() {
         heap = new char[heap_size];
         heap_used = 0;
         next = heap;
+        allocation_counter = 0;
     }
 ~~~
-The constructor consists of the 'heap_size', which underlines the size of the heap itself when specified in main, and the 'heap' itself (allocated with memory dynamically using the 'new' function, and being a char[heap_size] to be exactly one byte to work with memory in the byte level, and to ensure accuracy with respect to allocaions and for the alignment), the 'heap_used' which is set to '0' to be a starting point for the amount of memory allocated in our bump allocator, and a 'next' pointer that points to the heap, to be able to keep track of the next available memory address after allocation (further explained in the alloc function).
+The constructor consists of the 'heap_size', which underlines the size of the heap itself when specified in main, and the 'heap' itself (allocated with memory dynamically using the 'new' function, and being a char[heap_size] to be exactly one byte to work with memory in the byte level, and to ensure accuracy with respect to allocaions and for the alignment), the 'heap_used' which is set to '0' to be a starting point for the amount of memory allocated in our bump allocator, and a 'next' pointer that points to the heap, to be able to keep track of the next available memory address after allocation (further explained in the alloc function). An allocation counter is initialised to 0 to keep track of the number of allocations.
 
 ---
 
@@ -123,6 +124,7 @@ template <class T>
         T* ptr = reinterpret_cast<T*>(next); // Create a typed pointer at the adjusted 'next' location
         next += sizeof(T) * n; // Move 'next' pointer to next available memory after allocation
         heap_used += sizeof(T) * n + padding; // Update memory used in heap
+        allocation_counter++;
         
         std::cout << "Allocated " << n << " elements at address " << reinterpret_cast<void*>(ptr) << std::endl;
         std::cout << "Heap used is: " << heap_used << std::endl;
@@ -219,7 +221,13 @@ The code remains the same, with the exception for the dealloc function now being
 dealloc function bool type:
 ~~~ruby
     bool dealloc() {
-        next = heap; // Have the 'next' pointer point back to the beginning of the heap
+        if (allocation_counter > 0) {
+            allocation_counter--;
+        }
+
+        if (allocation_counter == 0) {
+            next = heap; // Reset the 'next' pointer to the beginning of the heap
+        }
         return true;
     }
 ~~~
@@ -466,7 +474,7 @@ Bump down alloc function:
         T* ptr = reinterpret_cast<T *>(new_alignment); // Create a typed pointer at the calculated aligned memory location
         next = new_alignment; // Update 'next' pointer to the new aligned memory location
         heap_used += (address - reinterpret_cast<uintptr_t>(padding)) + sizeof(T) * n; // Update memory used in heap
-
+        allocation_counter++;
         return ptr;
     }
 ~~~
