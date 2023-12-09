@@ -3,11 +3,11 @@
 #include <iostream>
 
 template <size_t size>
-class bump_up {
+class bump {
 public:
     // Constructor
     // Allocates memory on the heap and initializes class members
-    bump_up() {
+    bump() {
         heap_size = size; // Initialise heap size to template parameter
         heap = new char[heap_size]; // Initialise heap by allocating a new char array on the heap with the specified size
         heap_used = 0; // Initialise the amount used on the heap to 0
@@ -16,7 +16,7 @@ public:
 
     // Destructor
     // Deletes the entire heap memory when the object is destroyed
-    ~bump_up() {
+    ~bump() {
         delete[] heap; // Deletes mmory on heap
     }
 
@@ -38,6 +38,10 @@ public:
         next += sizeof(T) * n; // Move 'next' pointer to next available memory after allocation
         heap_used += sizeof(T) * n + padding; // Update memory used in heap
 
+        std::cout << "Allocated " << n << " elements at address " << reinterpret_cast<void*>(ptr) << std::endl;
+        std::cout << "Heap used is: " << heap_used << std::endl;
+        std::cout << "The next available memory address is: " << reinterpret_cast<void*>(next) << std::endl;
+
         return ptr;
     }
 
@@ -45,6 +49,8 @@ public:
     // Deallocate by resetting the 'next' pointer to the beginning of the heap
     void dealloc() {
         next = heap; // Have the 'next' pointer point back to the beginning of the heap
+        std::cout << "Deallocated all memory." << std::endl;
+        std::cout << "Deallocated memory at address " << static_cast<void *>(heap) << std::endl;
     }
     
 private:
