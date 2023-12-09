@@ -46,6 +46,7 @@ public:
     void dealloc() {
         next = heap; // Have the 'next' pointer point back to the beginning of the heap
     }
+    
 private:
     char* heap; // Pointer to the start of the allocated heap
     char* next; // Pointer to the next available memory location in the heap
