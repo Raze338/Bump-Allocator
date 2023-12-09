@@ -12,6 +12,7 @@ public:
         heap = new char[heap_size]; // Initialise heap by allocating a new char array on the heap with the specified size
         heap_used = 0; // Initialise the amount used on the heap to 0
         next = heap; // Initialise the next pointer to the beginning of the heap
+        allocation_counter = 0;
     }
 
     // Destructor
@@ -37,7 +38,9 @@ public:
         T* ptr = reinterpret_cast<T*>(next); // Create a typed pointer at the adjusted 'next' location
         next += sizeof(T) * n; // Move 'next' pointer to next available memory after allocation
         heap_used += sizeof(T) * n + padding; // Update memory used in heap
+        allocation_counter++; // Increase allocation counter
 
+        std::cout << "Allocation no." << allocation_counter << std::endl;
         std::cout << "Allocated " << n << " elements at address " << reinterpret_cast<void*>(ptr) << std::endl;
         std::cout << "Heap used is: " << heap_used << std::endl;
         std::cout << "The next available memory address is: " << reinterpret_cast<void*>(next) << std::endl;
@@ -48,7 +51,13 @@ public:
     // dealloc function
     // Deallocate by resetting the 'next' pointer to the beginning of the heap
     void dealloc() {
-        next = heap; // Have the 'next' pointer point back to the beginning of the heap
+       if (allocation_counter > 0) {
+            allocation_counter--;
+        }
+
+        if (allocation_counter == 0) {
+            next = heap; // Reset the 'next' pointer to the beginning of the heap
+        }
         std::cout << "Deallocated all memory." << std::endl;
         std::cout << "Deallocated memory at address " << static_cast<void *>(heap) << std::endl;
     }
@@ -58,4 +67,5 @@ private:
     char* next; // Pointer to the next available memory location in the heap
     size_t heap_size; // Size of the allocated heap in bytes
     size_t heap_used; // Amount of heap memory currently in use
+    size_t allocation_counter;
 };

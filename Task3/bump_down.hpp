@@ -12,6 +12,7 @@ public:
         heap = new char[heap_size]; // Initialise heap by allocating a new char array on the heap with the specified size
         heap_used = 0; // Initialise the amount used on the heap to 0
         next = heap + heap_size; // Initialise the next pointer to the end of the heap
+        allocation_counter = 0; // Initialise counter to 0
     }
 
     // Destructor
@@ -37,6 +38,7 @@ public:
         T* ptr = reinterpret_cast<T *>(new_alignment); // Create a typed pointer at the calculated aligned memory location
         next = new_alignment; // Update 'next' pointer to the new aligned memory location
         heap_used += (address - reinterpret_cast<uintptr_t>(padding)) + sizeof(T) * n; // Update memory used in heap
+        allocation_counter++; // Increment counter
 
         return ptr;
     }
@@ -44,7 +46,13 @@ public:
     // dealloc function
     // Deallocate by resetting the 'next' pointer to the end of the heap
     void dealloc() {
-        next = heap + heap_size; // Have the 'next' pointer point back to the end of the heap
+        if (allocation_counter > 0) {
+            allocation_counter--;
+        }
+
+        if (allocation_counter == 0) {
+            next = heap + heap_size; // Reset the 'next' pointer to the end of the heap
+        }
     }
 
 private:
@@ -52,4 +60,5 @@ private:
     char* next; // Pointer to the next available memory location in the heap
     size_t heap_size; // Size of the allocated heap in bytes
     size_t heap_used; // Amount of heap memory currently in use
+    size_t allocation_counter; // Tracks number of allocations
 };

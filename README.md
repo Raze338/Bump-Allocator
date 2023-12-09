@@ -153,7 +153,13 @@ dealloc function:
 
 ~~~ruby
 void dealloc() {
-        next = heap; // Have the 'next' pointer point back to the beginning of the heap
+       if (allocation_counter > 0) {
+            allocation_counter--;
+        }
+
+        if (allocation_counter == 0) {
+            next = heap; // Reset the 'next' pointer to the beginning of the heap
+        }
         std::cout << "Deallocated all memory." << std::endl;
         std::cout << "Deallocated memory at address " << static_cast<void *>(heap) << std::endl;
     }
@@ -482,9 +488,14 @@ Bump down dealloc function:
 // dealloc function
     // Deallocate by resetting the 'next' pointer to the end of the heap
     void dealloc() {
-        next = heap + heap_size; // Have the 'next' pointer point back to the end of the heap
-    }
+        if (allocation_counter > 0) {
+            allocation_counter--;
+        }
 
+        if (allocation_counter == 0) {
+            next = heap + heap_size; // Reset the 'next' pointer to the end of the heap
+        }
+    }
 ~~~
 
 The dealloc funciton is used set the 'next' pointer back to the end of the heap. The reason for not having it delete the entire heap is that the memory that is already used for it in the heap will always remain no matter what you do, unless you destroy the object. The destructor does this to free up the resources used for the object after it has been destroyed. This means that when we move the 'next' pointer back to the end, we overwrite the existing memory in the heap instead of having a new one. 
