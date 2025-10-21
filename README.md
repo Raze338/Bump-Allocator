@@ -1,7 +1,5 @@
 # Bump_Allocator
 
-This Repo is associated with the "UFCFWR-15-3 Advanced Systems Programming" course Worksheet-2, Tasks 1-3.
-
 ## Table of Contents
 
 - [About](#about)
